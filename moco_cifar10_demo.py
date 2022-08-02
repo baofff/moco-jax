@@ -419,5 +419,5 @@ for epoch in range(epoch_start, args.epochs + 1):
     data_frame = pd.DataFrame(data=results, index=range(epoch_start, epoch + 1))
     data_frame.to_csv(args.results_dir + '/log.csv', index_label='epoch')
     # save model
-    torch.save(model.state_dict(), 'model.pth')
+    torch.save(model.state_dict(), args.results_dir + '/model.pth')
     torch.save({'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer' : optimizer.state_dict(),}, args.results_dir + '/model_last.pth')
