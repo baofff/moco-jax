@@ -54,10 +54,7 @@ args = parser.parse_args()  # running in command line
 args = parser.parse_args('')  # running in ipynb
 
 # set command line arguments here when running in ipynb
-args.epochs = 200
-args.cos = True
 args.schedule = []  # cos in use
-args.symmetric = False
 if args.results_dir == '':
     args.results_dir = './cache-' + datetime.now().strftime("%Y-%m-%d-%H-%M-%S-moco")
 
