@@ -116,7 +116,7 @@ class ResNet(nn.Module):
         norm_layer = self._norm_layer
         downsample = None
 
-        if stride != 1 or self.inplanes != planes:
+        if stride != 1 or self.inplanes != planes:  # 输入输出block的shape发生改变
             downsample = nn.Sequential(
                 conv1x1(self.inplanes, planes, stride),
                 norm_layer(planes),
