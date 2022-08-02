@@ -91,13 +91,13 @@ test_transform = transforms.Compose([
     transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])])
 
 # data prepare
-train_data = CIFAR10Pair(root='data', train=True, transform=train_transform, download=True)
+train_data = CIFAR10Pair(root='assets/datasets/cifar10', train=True, transform=train_transform, download=True)
 train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, num_workers=16, pin_memory=True, drop_last=True)
 
-memory_data = CIFAR10(root='data', train=True, transform=test_transform, download=True)
+memory_data = CIFAR10(root='assets/datasets/cifar10', train=True, transform=test_transform, download=True)
 memory_loader = DataLoader(memory_data, batch_size=args.batch_size, shuffle=False, num_workers=16, pin_memory=True)
 
-test_data = CIFAR10(root='data', train=False, transform=test_transform, download=True)
+test_data = CIFAR10(root='assets/datasets/cifar10', train=False, transform=test_transform, download=True)
 test_loader = DataLoader(test_data, batch_size=args.batch_size, shuffle=False, num_workers=16, pin_memory=True)
 
 """### Define base encoder"""
