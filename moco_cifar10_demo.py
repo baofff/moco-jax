@@ -108,7 +108,7 @@ class SplitBatchNorm(nn.BatchNorm2d):
         
     def forward(self, input):
         N, C, H, W = input.shape
-        if self.training or not self.track_running_stats:
+        if self.training and self.track_running_stats:
             running_mean_split = self.running_mean.repeat(self.num_splits)
             running_var_split = self.running_var.repeat(self.num_splits)
             outcome = nn.functional.batch_norm(
