@@ -117,7 +117,7 @@ for i, label in enumerate(labels):
     dct[label].append(i)
 
 
-np.save('moco_torchvision_cifar10_train_cluster.npy', labels)
+np.save(f'moco_torchvision_cifar10_train_cluster_{K}.npy', labels)
 
 imgs = []
 for k in range(K):
