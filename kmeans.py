@@ -5,7 +5,6 @@ from torch.utils.data import DataLoader
 import torch
 import torch.nn as nn
 from torchvision.models import resnet
-from torchvision.utils import make_grid, save_image
 from functools import partial
 import einops
 from PIL import Image
@@ -70,7 +69,7 @@ class ModelBase(nn.Module):
 
 def kmeans(data, K):
     from sklearn.cluster import KMeans
-    model = KMeans(n_clusters=K, random_state=0)
+    model = KMeans(n_clusters=K, n_init=100, random_state=0)
     model.fit(data)
     labels = model.labels_
     cnt = {k: len(np.where(labels == k)[0]) for k in range(K)}
@@ -107,12 +106,13 @@ def entropy(p):
     return -sum(p * np.log(p))
 
 
-labels, cnt, frac = kmeans(features.detach().cpu().numpy(), 10)
+K = 20
+labels, cnt, frac = kmeans(features.detach().cpu().numpy(), K)
 print(frac)
-print(entropy([frac[k] for k in range(10)]))
+print(entropy([frac[k] for k in range(K)]), np.log(K))
 
 
-dct = {k: [] for k in range(10)}
+dct = {k: [] for k in range(K)}
 for i, label in enumerate(labels):
     dct[label].append(i)
 
@@ -120,13 +120,13 @@ for i, label in enumerate(labels):
 np.save('moco_torchvision_cifar10_train_cluster.npy', labels)
 
 imgs = []
-for label in range(10):
-    for i in dct[label][:10]:
+for k in range(K):
+    for i in dct[k][:10]:
         imgs.append(train.data[i])
 
 
 imgs = np.array(imgs)
-imgs = einops.rearrange(imgs, '(ncol nrow) H W C -> (ncol H) (nrow W) C', ncol=10, nrow=10)
+imgs = einops.rearrange(imgs, '(ncol nrow) H W C -> (ncol H) (nrow W) C', ncol=K, nrow=10)
 Image.fromarray(imgs).save('demo.png')
 
 
