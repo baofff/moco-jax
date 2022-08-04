@@ -2,9 +2,10 @@ import numpy as np
 from torchvision.datasets import CIFAR10
 from torchvision import transforms
 from torch.utils.data import DataLoader
-from moco_cifar10_demo import ModelBase
 import torch
 import torch.nn as nn
+from torchvision.models import resnet
+from functools import partial
 
 
 class SplitBatchNorm(nn.BatchNorm2d):
