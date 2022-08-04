@@ -106,7 +106,7 @@ def entropy(p):
     return -sum(p * np.log(p))
 
 
-K = 20
+K = 50
 labels, cnt, frac = kmeans(features.detach().cpu().numpy(), K)
 print(frac)
 print(entropy([frac[k] for k in range(K)]), np.log(K))
@@ -126,6 +126,7 @@ for k in range(K):
 
 
 imgs = np.array(imgs)
+print(len(imgs))
 imgs = einops.rearrange(imgs, '(ncol nrow) H W C -> (ncol H) (nrow W) C', ncol=K, nrow=10)
 Image.fromarray(imgs).save('demo.png')
 
