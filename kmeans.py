@@ -160,7 +160,7 @@ def main(K=50):
     print('pred = my_pred')
 
 
-    fname_test = f'moco_torchvision_cifar10_train_cluster_{K}'
+    fname_test = f'moco_torchvision_cifar10_test_cluster_{K}'
     np.save(f'{fname_test}.npy', pred)
     save_img_by_cluster(test.data, pred, K, fname_test)
 
