@@ -99,7 +99,7 @@ def entropy(p):
 
 
 def distance(batch, clusters):
-    return ( np.sum(batch ** 2, axis=1, keepdim=True)
+    return ( np.sum(batch ** 2, axis=1, keepdims=True)
             + np.sum(clusters ** 2, axis=1)
             - 2 * np.matmul(batch, clusters.T) )
 
@@ -158,7 +158,7 @@ def main(K=50):
     print(my_pred)
     assert (pred == my_pred).all()
     print('pred = my_pred')
-    
+
 
     fname_test = f'moco_torchvision_cifar10_train_cluster_{K}'
     np.save(f'{fname_test}.npy', pred)
