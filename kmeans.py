@@ -98,6 +98,18 @@ def entropy(p):
     return -sum(p * np.log(p))
 
 
+def distance(batch, clusters):
+    return ( np.sum(batch ** 2, axis=1, keepdim=True)
+            + np.sum(clusters ** 2, axis=1)
+            - 2 * np.matmul(batch, clusters.T) )
+
+
+def my_predict(model, features):
+    dist = distance(features, model.cluster_centers_)
+    pred = np.argmin(dist, axis=1)
+    return pred
+
+
 def main(K=50):
     transform = transforms.Compose([
         transforms.ToTensor(),
@@ -140,7 +152,14 @@ def main(K=50):
         features_test.append(encoder_q(batch[0].to('cuda')))
 
     features_test = torch.cat(features_test, dim=0)
-    pred = model.predict(features_test)
+    pred = model.predict(features_test.detach().cpu().numpy())
+    my_pred = my_predict(model, features_test)
+    print(pred)
+    print(my_pred)
+    assert (pred == my_pred).all()
+    print('pred = my_pred')
+    
+
     fname_test = f'moco_torchvision_cifar10_train_cluster_{K}'
     np.save(f'{fname_test}.npy', pred)
     save_img_by_cluster(test.data, pred, K, fname_test)
