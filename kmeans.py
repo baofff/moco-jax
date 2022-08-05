@@ -78,65 +78,69 @@ def kmeans(data, K):
     return labels, cnt, frac, model
 
 
-train_transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])])
+def save_img_by_cluster(data, labels, K, fname):
+    dct = {k: [] for k in range(K)}
+    for i, label in enumerate(labels):
+        dct[label].append(i)
 
+    imgs = []
+    for k in range(K):
+        for i in dct[k][:10]:
+            imgs.append(data[i])
 
-
-train = CIFAR10(root='assets/datasets/cifar10', train=True, transform=train_transform, download=True)
-train_loader = DataLoader(train, batch_size=128, shuffle=False, num_workers=16, pin_memory=True)
-
-
-encoder_q = ModelBase(feature_dim=128, arch='resnet18', bn_splits=8)
-state = torch.load('cache-2022-08-02-17-37-47-moco/model.pth')
-encoder_q.load_state_dict(state)
-encoder_q.eval()
-encoder_q.requires_grad_(False)
-encoder_q.to('cuda')
-
-
-features = []
-for batch in train_loader:
-    features.append(encoder_q(batch[0].to('cuda')))
-
-features = torch.cat(features, dim=0)
+    imgs = np.array(imgs)
+    print(len(imgs))
+    imgs = einops.rearrange(imgs, '(ncol nrow) H W C -> (ncol H) (nrow W) C', ncol=K, nrow=10)
+    Image.fromarray(imgs).save(f'{fname}.png')
 
 
 def entropy(p):
     return -sum(p * np.log(p))
 
 
-K = 50
-labels, cnt, frac, model = kmeans(features.detach().cpu().numpy(), K)
-print(frac)
-print(entropy([frac[k] for k in range(K)]), np.log(K))
+def main(K=50):
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])])
 
 
-fname = f'moco_torchvision_cifar10_train_cluster_{K}'
+    train = CIFAR10(root='assets/datasets/cifar10', train=True, transform=transform, download=True)
+    train_loader = DataLoader(train, batch_size=128, shuffle=False, num_workers=16, pin_memory=True)
+    test = CIFAR10(root='assets/datasets/cifar10', train=False, transform=transform, download=True)
+    test_loader = DataLoader(test, batch_size=128, shuffle=False, num_workers=16, pin_memory=True)
 
 
-with open(f'{fname}.pkl', 'wb') as f:
-    pickle.dump(model, f)
+    encoder_q = ModelBase(feature_dim=128, arch='resnet18', bn_splits=8)
+    state = torch.load('cache-2022-08-02-17-37-47-moco/model.pth')
+    encoder_q.load_state_dict(state)
+    encoder_q.eval()
+    encoder_q.requires_grad_(False)
+    encoder_q.to('cuda')
 
 
-dct = {k: [] for k in range(K)}
-for i, label in enumerate(labels):
-    dct[label].append(i)
+    features = []
+    for batch in train_loader:
+        features.append(encoder_q(batch[0].to('cuda')))
 
+    features = torch.cat(features, dim=0)
 
-np.save(f'{fname}.npy', labels)
+    labels, cnt, frac, model = kmeans(features.detach().cpu().numpy(), K)
+    print(frac)
+    print(entropy([frac[k] for k in range(K)]), np.log(K))
 
-imgs = []
-for k in range(K):
-    for i in dct[k][:10]:
-        imgs.append(train.data[i])
+    fname = f'moco_torchvision_cifar10_train_cluster_{K}'
+    with open(f'{fname}.pkl', 'wb') as f:
+        pickle.dump(model, f)
 
+    np.save(f'{fname}.npy', labels)
+    save_img_by_cluster(train.data, labels, K, fname)
 
-imgs = np.array(imgs)
-print(len(imgs))
-imgs = einops.rearrange(imgs, '(ncol nrow) H W C -> (ncol H) (nrow W) C', ncol=K, nrow=10)
-Image.fromarray(imgs).save(f'{fname}.png')
+    features_test = []
+    for batch in test_loader:
+        features_test.append(encoder_q(batch[0].to('cuda')))
 
-
-
+    features_test = torch.cat(features_test, dim=0)
+    pred = model.predict(features_test)
+    fname_test = f'moco_torchvision_cifar10_train_cluster_{K}'
+    np.save(f'{fname_test}.npy', pred)
+    save_img_by_cluster(test.data, pred, K, fname_test)
