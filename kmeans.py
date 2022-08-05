@@ -8,6 +8,7 @@ from torchvision.models import resnet
 from functools import partial
 import einops
 from PIL import Image
+import pickle
 
 
 class SplitBatchNorm(nn.BatchNorm2d):
@@ -74,7 +75,7 @@ def kmeans(data, K):
     labels = model.labels_
     cnt = {k: len(np.where(labels == k)[0]) for k in range(K)}
     frac = {k: cnt[k] / len(data) for k in range(K)}
-    return labels, cnt, frac
+    return labels, cnt, frac, model
 
 
 train_transform = transforms.Compose([
@@ -107,9 +108,16 @@ def entropy(p):
 
 
 K = 50
-labels, cnt, frac = kmeans(features.detach().cpu().numpy(), K)
+labels, cnt, frac, model = kmeans(features.detach().cpu().numpy(), K)
 print(frac)
 print(entropy([frac[k] for k in range(K)]), np.log(K))
+
+
+fname = f'moco_torchvision_cifar10_train_cluster_{K}'
+
+
+with open(f'{fname}.pkl', 'wb') as f:
+    pickle.dump(model, f)
 
 
 dct = {k: [] for k in range(K)}
@@ -117,7 +125,7 @@ for i, label in enumerate(labels):
     dct[label].append(i)
 
 
-np.save(f'moco_torchvision_cifar10_train_cluster_{K}.npy', labels)
+np.save(f'{fname}.npy', labels)
 
 imgs = []
 for k in range(K):
@@ -128,7 +136,7 @@ for k in range(K):
 imgs = np.array(imgs)
 print(len(imgs))
 imgs = einops.rearrange(imgs, '(ncol nrow) H W C -> (ncol H) (nrow W) C', ncol=K, nrow=10)
-Image.fromarray(imgs).save('demo.png')
+Image.fromarray(imgs).save(f'{fname}.png')
 
 
 
