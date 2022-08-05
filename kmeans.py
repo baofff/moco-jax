@@ -153,7 +153,7 @@ def main(K=50):
 
     features_test = torch.cat(features_test, dim=0)
     pred = model.predict(features_test.detach().cpu().numpy())
-    my_pred = my_predict(model, features_test)
+    my_pred = my_predict(model, features_test.detach().cpu().numpy())
     print(pred)
     print(my_pred)
     assert (pred == my_pred).all()
