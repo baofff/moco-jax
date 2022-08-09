@@ -9,6 +9,7 @@ from functools import partial
 import einops
 from PIL import Image
 import pickle
+from scipy.optimize import linear_sum_assignment
 
 
 class SplitBatchNorm(nn.BatchNorm2d):
@@ -110,6 +111,45 @@ def my_predict(model, features):
     return pred
 
 
+def calculate_acc(ypred, y, return_idx=False):
+    """
+    Calculating the clustering accuracy. The predicted result must have the same number of clusters as the ground truth.
+
+    ypred: 1-D numpy vector, predicted labels
+    y: 1-D numpy vector, ground truth
+    The problem of finding the best permutation to calculate the clustering accuracy is a linear assignment problem.
+    This function construct a N-by-N cost matrix, then pass it to scipy.optimize.linear_sum_assignment to solve the assignment problem.
+
+    """
+    assert len(y) > 0
+    assert len(np.unique(ypred)) == len(np.unique(y))
+
+    s = np.unique(ypred)
+    t = np.unique(y)
+
+    N = len(np.unique(ypred))
+    C = np.zeros((N, N), dtype=np.int32)
+    for i in range(N):
+        for j in range(N):
+            idx = np.logical_and(ypred == s[i], y == t[j])
+            C[i][j] = np.count_nonzero(idx)
+
+    # convert the C matrix to the 'true' cost
+    Cmax = np.amax(C)
+    C = Cmax - C
+    row, col = linear_sum_assignment(C)
+    # calculating the accuracy according to the optimal assignment
+    count = 0
+    for i in range(N):
+        idx = np.logical_and(ypred == s[row[i]], y == t[col[i]])
+        count += np.count_nonzero(idx)
+
+    if return_idx:
+        return 1.0 * count / len(y), row, col
+    else:
+        return 1.0 * count / len(y)
+
+
 def main(K=50):
     transform = transforms.Compose([
         transforms.ToTensor(),
@@ -139,6 +179,8 @@ def main(K=50):
     labels, cnt, frac, model = kmeans(features.detach().cpu().numpy(), K)
     print(frac)
     print(entropy([frac[k] for k in range(K)]), np.log(K))
+    if K == 10:
+        print('train acc', calculate_acc(labels, train.targets))
 
     fname = f'moco_torchvision_cifar10_train_cluster_{K}'
     with open(f'{fname}.pkl', 'wb') as f:
@@ -158,6 +200,8 @@ def main(K=50):
     print(my_pred)
     assert (pred == my_pred).all()
     print('pred = my_pred')
+    if K == 10:
+        print('test acc', calculate_acc(pred, test.targets))
 
 
     fname_test = f'moco_torchvision_cifar10_test_cluster_{K}'
